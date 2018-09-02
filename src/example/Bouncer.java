@@ -1,13 +1,8 @@
 package example;
 
-import javafx.scene.Group;
-import javafx.scene.Scene;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.shape.Rectangle;
-
-import java.util.List;
 
 public class Bouncer {
     public enum State {
@@ -28,10 +23,10 @@ public class Bouncer {
     private boolean powerBouncher;
     private boolean recentlyHitBouncer;
 
-    private ExampleBounce parentContext;
+    private MainGame parentContext;
 
 
-    public Bouncer(Image image, int x, int y, int xDir, int yDir,  double scale, State type, ExampleBounce parentContext) {
+    public Bouncer(Image image, int x, int y, int xDir, int yDir,  double scale, State type, MainGame parentContext) {
 
         this.myImage = new ImageView(image);
         this.myImage.setX(x);

@@ -26,7 +26,7 @@ import java.util.Scanner;
  * 
  * @author Robert C. Duvall
  */
-public class ExampleBounce extends Application {
+public class MainGame extends Application {
     public static final String TITLE = "Example JavaFX";
     public static final int SIZE = 500;
     public static final int FRAMES_PER_SECOND = 60;

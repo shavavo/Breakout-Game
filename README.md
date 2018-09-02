@@ -3,11 +3,11 @@ game
 
 This project implements the game of Breakout.
 
-Name: 
+Name: David Cheng
 
 ### Timeline
 
-Start Date: 
+Start Date: 8/30/18
 
 Finish Date: 
 
@@ -18,7 +18,7 @@ Hours Spent:
 
 ### Running the Program
 
-Main class:
+Main class: MainGame
 
 Data files needed: 
 

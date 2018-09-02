@@ -13,7 +13,7 @@ public class Drop {
     private boolean isActive;
     private Type myType;
 
-    private ExampleBounce parentContext;
+    private MainGame parentContext;
 
     public enum Type {
         EXTRA_BALL,
@@ -29,7 +29,7 @@ public class Drop {
         }
     }
 
-    public Drop(Type type, int x, int y, ExampleBounce context) {
+    public Drop(Type type, int x, int y, MainGame context) {
         Image image;
 
         switch(type) {

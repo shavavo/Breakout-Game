@@ -3,7 +3,6 @@ package example;
 import javafx.scene.Group;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 
@@ -22,10 +21,10 @@ public class Block {
 
     private Type blockType;
 
-    private ExampleBounce parentContext;
+    private MainGame parentContext;
 
 
-    public Block(int x, int y, int w, int h, int health, Type type, ExampleBounce context) {
+    public Block(int x, int y, int w, int h, int health, Type type, MainGame context) {
         this.myRectangle = new Rectangle(x, y, w, h);
 
         this.parentContext = context;
