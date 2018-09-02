@@ -1,0 +1,25 @@
+I found the pinball breakout variant of breakout interesting because it combined two similar classic games into one, both of which I used to play. I think it was successful in combining the unique mechanics of each game.
+
+The 4 levels that I plan to create will advance in difficulty by adding new types of blocks that take multiple hits, making the paddle smaller, and increasing the speed of the ball. As the levels advance, I will also introduce new powerups, and the general layout of the blocks will differ.
+
+Blocks:
+-One that slows down the bouncer for 5s
+-One that speeds up the bouncer for 5s
+-Stronger blocks (more hits)
+-One that creates a second bouncer
+-One that drops power-ups
+
+Power-ups:
+-One that makes the bouncer destroy + go through blocks in one hit
+-Extra life
+-Launch three balls on next hit
+-Makes paddle longer
+
+Cheat codes:
+-Press ~ for extra life
+-Press + to speed up ball
+-Press - to slow down ball
+-Press I for invincibility
+
+Extra:
+-Use score to buy new skins/background
