@@ -83,12 +83,19 @@ public class Block {
 
             active = false;
 
-            if(blockType==Type.RANDOM_DROP)
-                parentContext.addDrop((int)(stack.getLayoutX() + stack.getWidth()/2), (int)stack.getLayoutY());
-            else if(blockType==Type.BALL_SPEED_DOWN)
+            if (blockType == Type.RANDOM_DROP) {
+                int x = (int) (stack.getLayoutX() + stack.getWidth() / 2);
+                int y = (int) stack.getLayoutY();
+                parentContext.getMyDrops().add(new Drop(Drop.Type.randomType(), x, y, parentContext));
+            } else if (blockType == Type.BALL_SPEED_DOWN) {
+                parentContext.getMyHUD().fadeNewLabel("BALL SPEED+");
                 bouncer.changeSpeedBy(-50);
-            else if(blockType==Type.BALL_SPEED_UP)
+            }
+            else if(blockType==Type.BALL_SPEED_UP) {
+                parentContext.getMyHUD().fadeNewLabel("BALL SPEED-");
                 bouncer.changeSpeedBy(50);
+            }
+
 
 
 
@@ -97,21 +104,22 @@ public class Block {
         }
 
         if(!bouncer.getPowerBouncer()) {
+
+            //Hit was from above the brick
+            if (bouncerY <= stack.getLayoutY() - (stack.getHeight() / 2)) {
+                bouncer.reverseY();
+//                System.out.println("ABOVE");
+            }
             //Hit was from below the brick
-            if (bouncerY <= stack.getLayoutY() - (stack.getHeight() / 2))
+            else if(bouncerY >= stack.getLayoutY() + (stack.getHeight() / 2)) {
                 bouncer.reverseY();
-
-                //Hit was from above the brick
-            else if (bouncerY >= stack.getLayoutY() + (stack.getHeight() / 2))
-                bouncer.reverseY();
-
-                //Hit was on left
-            else if (bouncerX < stack.getLayoutX())
+//                System.out.println("BELOW");
+            }
+            else {
                 bouncer.reverseX();
+//                System.out.println("SIDE");
+            }
 
-                //Hit was on right
-            else if (bouncerX > stack.getLayoutX())
-                bouncer.reverseX();
         }
 
     }

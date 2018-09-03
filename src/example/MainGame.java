@@ -10,15 +10,13 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Scanner;
 
 
 /**
@@ -38,10 +36,11 @@ public class MainGame extends Application {
 
     public static final Paint MOVER_COLOR = Color.WHITESMOKE;
     public static final int MOVER_SIZE = 75;
-    public static final int MOVER_SPEED = 8;
+    public static final int MOVER_SPEED = 6;
 
     public int score;
-
+    public int lives;
+    public GameState gameState;
 
 
     // some things we need to remember during our game
@@ -51,6 +50,8 @@ public class MainGame extends Application {
     private List<Bouncer> myBouncers;
     private List<Block> myBlocks;
     private List<Drop> myDrops;
+    private Drop.Type myActiveBouncerBuff;
+
     private Image bouncerImage;
 
     private int windowWidth;
@@ -59,18 +60,42 @@ public class MainGame extends Application {
     private HashMap<String, Boolean> currentlyActiveKeys = new HashMap<>();
     private Group root;
 
+    private ArrayList<Level> myLevels;
 
-    
+    public int currentLevelNumber;
+    public Level currentLevel;
+
+    public enum GameState {
+        PLAYING,
+        INTERMISSION,
+        GAME_OVER
+    }
+
     /**
      * Initialize what will be displayed and how it will be updated.
      */
     @Override
     public void start (Stage stage) {
+
+
+        myLevels = new ArrayList<>();
+        myLevels.add(new Level(1, 3, "level1.txt", 200, this));
+        myLevels.add(new Level(2, 5, "level2.txt", 250, this));
+
+        this.currentLevelNumber = 0;
+        this.score = 0;
+
+
         // attach scene to the stage and display it
         myScene = setupGame( (int)(.8*SIZE) , SIZE, BACKGROUND);
         stage.setScene(myScene);
         stage.setTitle(TITLE);
         stage.show();
+
+        gameState = GameState.PLAYING;
+        loadLevel(currentLevelNumber);
+
+
         // attach "game loop" to timeline to play it
         var frame = new KeyFrame(Duration.millis(MILLISECOND_DELAY), e -> step(SECOND_DELAY));
         var animation = new Timeline();
@@ -91,23 +116,13 @@ public class MainGame extends Application {
         this.windowWidth = width;
         this.windowHeight = height;
 
-        this.score = 0;
-
-
         myDrops = new ArrayList<Drop>();
         myBouncers = new ArrayList<Bouncer>();
-        myBouncers.add(new Bouncer(bouncerImage, width/20, height/2, 1, 1, 1, Bouncer.State.LAUNCH,this));
+
         myMover = new Rectangle(width/2 - MOVER_SIZE/2, .9 * height , MOVER_SIZE, MOVER_SIZE/5);
         myMover.setFill(MOVER_COLOR);
 
-
-        populateBlocks("level1.txt");
-
-        for(Block block: myBlocks)
-            root.getChildren().add(block.getStack());
-
         root.getChildren().add(myMover);
-
 
         myHUD = new HUD(width, height, root);
 
@@ -123,45 +138,108 @@ public class MainGame extends Application {
 
         scene.setOnKeyReleased(event -> currentlyActiveKeys.remove(event.getCode().toString()));
 
+
+
         return scene;
     }
 
 
-    List<Bouncer> toRemove;
 
-    // Change properties of shapes to animate them 
+    // Change properties of shapes to animate them
     // Note, there are more sophisticated ways to animate shapes, but these simple ways work fine to start.
     private void step (double elapsedTime) {
-        // update attributes
-        toRemove = new ArrayList<Bouncer>();
-        for(Bouncer bouncer: myBouncers)
-            bouncer.update(elapsedTime);
-        myBouncers.removeAll(toRemove);
+        if(gameState==GameState.PLAYING) {
+            // update attributes
 
+            List<Bouncer> toRemove = new ArrayList<>();
+            for(Bouncer bouncer : myBouncers) {
+                boolean shouldRemove = bouncer.update(elapsedTime);
+                if(shouldRemove)
+                    toRemove.add(bouncer);
+            }
+            myBouncers.removeAll(toRemove);
+
+
+            for (Drop drop: myDrops)
+                drop.update(elapsedTime);
+
+            // Handle key presses
+            if (isKeyActive(KeyCode.LEFT) && isKeyActive(KeyCode.RIGHT)) {
+                // Do nothing
+            } else if (isKeyActive(KeyCode.LEFT) && myMover.getX() > 0) {
+                myMover.setX(myMover.getX() - MOVER_SPEED);
+            } else if (isKeyActive(KeyCode.RIGHT) && myMover.getX() < myScene.getWidth() - myMover.getWidth()) {
+                myMover.setX(myMover.getX() + MOVER_SPEED);
+            } else if (isKeyActive(KeyCode.SPACE)) {
+                myBouncers.get(0).setMyState(Bouncer.State.NORMAL);
+
+                System.out.print("launched");
+            }
+
+            // No bouncers left, lives - 1
+            if(myBouncers.size()==0) {
+                lives  -= 1;
+                myHUD.updateLives(lives);
+
+                if(lives==0) {
+                    gameState = GameState.GAME_OVER;
+                    myHUD.updatePrimaryLabel("GAME OVER");
+                    myHUD.updateSecondaryLabel("PRESS SPACE TO RESTART LEVEL");
+                } else {
+                    myBouncers.add(new Bouncer(bouncerImage, windowWidth/20, windowHeight/2, 1, 1, 1, Bouncer.State.LAUNCH, currentLevel.getDefaultBouncerSpeed(),this));
+                }
+            }
+
+            // No blocks left, level won
+            if(myBlocks.size()==0) {
+                gameState = GameState.INTERMISSION;
+                myHUD.updatePrimaryLabel("LEVEL COMPLETED");
+                myHUD.updateSecondaryLabel("PRESS SPACE TO START NEXT LEVEL");
+            }
+
+        } else if(gameState==GameState.GAME_OVER) {
+
+        } else if(gameState==GameState.INTERMISSION) {
+            if(isKeyActive(KeyCode.SPACE)) {
+                currentLevelNumber++;
+                gameState = GameState.PLAYING;
+                loadLevel(currentLevelNumber);
+
+                currentlyActiveKeys.remove(KeyCode.SPACE.toString());
+            }
+        }
+    }
+
+
+    private void loadLevel(int levelNumber) {
+        for(Bouncer bouncer: myBouncers)
+            bouncer.remove();
+        myBouncers.clear();
 
         for(Drop drop: myDrops)
-            drop.update(elapsedTime);
+            drop.remove();
+        myDrops.clear();
 
+        myActiveBouncerBuff = null;
 
-        if( isKeyActive(KeyCode.LEFT) && isKeyActive(KeyCode.RIGHT) ) {
-            // Do nothing
-        } else if( isKeyActive(KeyCode.LEFT) && myMover.getX() > 0 ) {
-            myMover.setX(myMover.getX() - MOVER_SPEED);
-        } else if( isKeyActive(KeyCode.RIGHT) && myMover.getX() < myScene.getWidth() - myMover.getWidth() ) {
-            myMover.setX(myMover.getX() + MOVER_SPEED);
-        } else if( isKeyActive(KeyCode.SPACE) ) {
-            myBouncers.get(0).setMyState(Bouncer.State.NORMAL);
-        }
+        this.currentLevel = myLevels.get(levelNumber);
+        this.lives = myLevels.get(levelNumber).getLivesStart();
 
-        if(myBouncers.size()==0) {
-            myBouncers.add(new Bouncer(bouncerImage, windowWidth/20, windowHeight/2, 1, 1, 1, Bouncer.State.LAUNCH,this));
-        }
+        // Add initial bouncer
+        myBouncers.add(new Bouncer(bouncerImage, windowWidth/20, windowHeight/2, 1, 1, 1, Bouncer.State.LAUNCH, currentLevel.getDefaultBouncerSpeed(),this));
+
+        // Populate blocks
+        myBlocks = currentLevel.populateBlocks(windowWidth, windowHeight);
+        for(Block block: myBlocks)
+            root.getChildren().add(block.getStack());
+
+        // Update HUD
+        myHUD.updateLives(lives);
+        myHUD.updateLevel(currentLevel.getLevelNumber());
+
+        myHUD.updatePrimaryLabel("");
+        myHUD.updateSecondaryLabel("");
     }
-
-    public void addToRemove(Bouncer bouncer) {
-        toRemove.add(bouncer);
-    }
-
 
     private boolean isKeyActive(KeyCode code) {
         String codeString = code.toString();
@@ -170,153 +248,58 @@ public class MainGame extends Application {
         return false;
     }
 
-
-
-
     // What to do each time a key is pressed
     private void handleMouseInput (double x, double y) {
 
     }
 
-    private void populateBlocks(String fileName) {
-        myBlocks = new ArrayList<Block>();
-
-        ArrayList<String> level = readFile(fileName);
-
-        int height = level.size();
-        int width = level.get(0).length();
-
-
-
-        for(int i=0; i<level.size(); i++) {
-            String row = level.get(i);
-
-            int actualJ = 0;
-            for(int j=0; j<row.length(); j++) {
-                char block = row.charAt(j);
-
-                int health;
-                Block.Type type;
-
-                if(block=='?' || block=='+' || block=='-') {
-                    j++;
-                    health = Character.getNumericValue(row.charAt(j));
-                }
-                else {
-                    health = Character.getNumericValue(block);
-                }
-
-                if(block!='o') {
-                    if(block=='?')
-                        type = Block.Type.RANDOM_DROP;
-                    else if(block=='+')
-                        type = Block.Type.BALL_SPEED_UP;
-                    else if(block=='-')
-                        type = Block.Type.BALL_SPEED_DOWN;
-                    else
-                        type = Block.Type.NORMAL;
-
-
-                    myBlocks.add(new Block(actualJ*windowWidth/width, i*windowHeight/height, windowWidth/width, windowHeight/height, health, type, this));
-
-                }
-
-                actualJ++;
-
-            }
-        }
-
-
-
-    }
-
-    private ArrayList<String> readFile(String fileName) {
-        //Get file from resources folder
-        ClassLoader classLoader = getClass().getClassLoader();
-        File file = new File(classLoader.getResource(fileName).getFile());
-        ArrayList<String> output = new ArrayList<>();
-
-
-        try {
-            Scanner in = new Scanner(file);
-
-            while(in.hasNext()) {
-                output.add(in.next());
-            }
-            in.close();
-
-        }
-        catch (FileNotFoundException e){
-            System.out.print("File Not Found");
-        }
-
-        return output;
-    }
-
-    public void addDrop(int x, int y) {
-        myDrops.add(new Drop(Drop.Type.randomType(), x, y, this));
-
-    }
-
-    public List<Bouncer> getMyBouncers() {
-        return myBouncers;
-    }
-
-    public Rectangle getMyMover() {
-        return myMover;
-    }
-
-    public Group getRoot() {
-        return root;
-    }
-
     private int widthBuffLength = -1;
 
-    private ArrayList<Drop.Type> myActiveBuffs = new ArrayList<>();
     public void powerUp(Drop.Type type) {
 
         addToScore(500);
 
-        myActiveBuffs.add(type);
-
         switch(type) {
             case MOVER_SIZE_UP:
+                myActiveBouncerBuff = type;
                 myMover.setWidth(MOVER_SIZE * 1.5);
-                myMover.setFill(Color.RED);
                 widthBuffLength = 5;
+                myHUD.fadeNewLabel("PADDLE SIZE+");
                 break;
             case EXTRA_BALL:
                 var image = new Image(this.getClass().getClassLoader().getResourceAsStream("ball.gif"));
+                myHUD.fadeNewLabel("EXTRA BALL");
                 myBouncers.add(
                         new Bouncer(
                                 image,
-                                (int)myMover.getX(),
+                                (int)(myMover.getX() + myMover.getWidth()/2),
                                 (int)(myMover.getY() - myMover.getHeight()),
                                 1,
                                 -1,
                                 1,
                                 Bouncer.State.NORMAL,
+                                currentLevel.getDefaultBouncerSpeed(),
                                 this
                         )
                 );
                 break;
             case POWER_BOUNCHER:
-                myMover.setFill(Color.YELLOW);
-
+                myHUD.fadeNewLabel("POWER BALL");
+                myActiveBouncerBuff = type;
+                myMover.setWidth(MOVER_SIZE);
                 break;
         }
+
+        updateMoverColor();
     }
 
-
     public void onBouncerHitMover(Bouncer bouncer) {
-
-        if(myActiveBuffs.contains(Drop.Type.POWER_BOUNCHER)) {
+        if(myActiveBouncerBuff == Drop.Type.POWER_BOUNCHER) {
             bouncer.setPowerBouncher(true);
-            myActiveBuffs.remove(Drop.Type.POWER_BOUNCHER);
-            myMover.setFill(Color.WHITESMOKE);
+            myActiveBouncerBuff = null;
+            updateMoverColor();
         } else {
             bouncer.setPowerBouncher(false);
-
         }
 
         if(widthBuffLength!=-1) {
@@ -324,10 +307,21 @@ public class MainGame extends Application {
 
             if(widthBuffLength==0) {
                 myMover.setWidth(MOVER_SIZE);
-                myMover.setFill(Color.WHITESMOKE);
+                myActiveBouncerBuff = null;
+                updateMoverColor();
                 widthBuffLength = -1;
             }
         }
+    }
+
+    public void updateMoverColor() {
+        // Power bouncer takes priority
+        if(myActiveBouncerBuff == Drop.Type.POWER_BOUNCHER)
+            myMover.setFill(Color.YELLOW);
+        else if(myActiveBouncerBuff == Drop.Type.MOVER_SIZE_UP)
+            myMover.setFill(Color.RED);
+        else
+            myMover.setFill(Color.WHITESMOKE);
 
     }
 
@@ -336,13 +330,24 @@ public class MainGame extends Application {
         myHUD.updateScore(score);
     }
 
-    public Scene getMyScene() {
-        return myScene;
-    }
 
-    public List<Block> getMyBlocks() {
-        return myBlocks;
-    }
+    // GETTERS
+
+    public Scene getMyScene() { return myScene; }
+
+    public List<Block> getMyBlocks() { return myBlocks; }
+
+    public List<Bouncer> getMyBouncers() { return myBouncers; }
+
+    public Rectangle getMyMover() { return myMover; }
+
+    public List<Drop> getMyDrops() { return myDrops; }
+
+    public Group getRoot() { return root; }
+
+    public HUD getMyHUD() { return myHUD; }
+
+    // END GETTERS
 
     /**
      * Start the program.

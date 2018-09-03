@@ -10,9 +10,11 @@ public class Bouncer {
         LAUNCH;
     }
 
+
+
     State myState;
 
-    public int BOUNCER_SPEED = 200;
+    public int bouncer_speed;
 
     private ImageView myImage;
 
@@ -23,16 +25,22 @@ public class Bouncer {
     private boolean powerBouncher;
     private boolean recentlyHitBouncer;
 
+    private boolean recentlyHitTop;
+    private boolean recentlyHitLeft;
+    private boolean recentlyHitRight;
+
     private MainGame parentContext;
 
 
-    public Bouncer(Image image, int x, int y, int xDir, int yDir,  double scale, State type, MainGame parentContext) {
+    public Bouncer(Image image, int x, int y, int xDir, int yDir,  double scale, State type, int speed, MainGame parentContext) {
 
         this.myImage = new ImageView(image);
         this.myImage.setX(x);
         this.myImage.setY(y);
         this.myImage.setScaleX(scale);
         this.myImage.setScaleY(scale);
+
+        this.bouncer_speed = speed;
 
         this.parentContext = parentContext;
         this.powerBouncher = false;
@@ -46,7 +54,6 @@ public class Bouncer {
         this.myBouncerSize = myImage.boundsInParentProperty().get().getWidth();
 
         parentContext.getRoot().getChildren().add(myImage);
-
     }
 
     public ImageView getMyImage() {
@@ -63,12 +70,12 @@ public class Bouncer {
     }
 
 
-    public void update(double elapsedTime) {
+    public boolean update(double elapsedTime) {
         if(myState==State.NORMAL) {
-            myImage.setX(myImage.getX() + BOUNCER_SPEED * myXDirection * elapsedTime);
-            myImage.setY(myImage.getY() + BOUNCER_SPEED * myYDirection * elapsedTime);
+            myImage.setX(myImage.getX() + bouncer_speed * myXDirection * elapsedTime);
+            myImage.setY(myImage.getY() + bouncer_speed * myYDirection * elapsedTime);
         } else if(myState==State.LAUNCH) {
-            myImage.setX(parentContext.getMyMover().getX() + parentContext.getMyMover().getWidth()/2 );
+            myImage.setX(parentContext.getMyMover().getX() + parentContext.getMyMover().getWidth()/2 - myBouncerSize/2);
             myImage.setY(parentContext.getMyMover().getY() - parentContext.getMyMover().getHeight() );
         }
 
@@ -85,9 +92,10 @@ public class Bouncer {
             myXDirection *= -1;
             recentlyHitBouncer = false;
         }
-        else if( myImage.getY() <= 0 ) {
+        else if( recentlyHitTop==false && myImage.getY() <= 0 ) {
             myYDirection *= -1;
             recentlyHitBouncer = false;
+            recentlyHitTop = true;
         }
         // Bouncer hits mover
         else if(recentlyHitBouncer==false && parentContext.getMyMover().getBoundsInParent().intersects(myImage.getBoundsInParent())) {
@@ -101,11 +109,13 @@ public class Bouncer {
 
             parentContext.onBouncerHitMover(this);
 
-
             recentlyHitBouncer = true;
+            recentlyHitTop = false;
+
+        // bouncer goes off bottom
         } else if(myImage.getY()>parentContext.getMyMover().getY() + parentContext.getMyMover().getHeight()) {
-            parentContext.getRoot().getChildren().remove(myImage);
-            parentContext.addToRemove(this);
+            remove();
+            return true;
         }
 
         // Check for hit on block
@@ -113,14 +123,17 @@ public class Bouncer {
             if(block.isActive() &&  block.getStack().getBoundsInParent().intersects(myImage.getBoundsInParent())) {
                 block.collide(myImage.getX(), myImage.getY(), this, parentContext.getRoot());
                 recentlyHitBouncer = false;
+                recentlyHitTop = false;
                 break;
             }
 
         }
 
+        return false;
+    }
 
-
-
+    public void remove() {
+        parentContext.getRoot().getChildren().remove(myImage);
     }
 
     public void setMyState(State myState) {
@@ -143,6 +156,10 @@ public class Bouncer {
 
 
     public void changeSpeedBy(int x) {
-        BOUNCER_SPEED += x;
+        bouncer_speed += x;
+    }
+
+    public double getMyBouncerSize() {
+        return myBouncerSize;
     }
 }

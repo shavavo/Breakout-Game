@@ -70,6 +70,10 @@ public class Drop {
 
     }
 
+    public void remove() {
+        parentContext.getRoot().getChildren().remove(myImage);
+    }
+
 
 
 
