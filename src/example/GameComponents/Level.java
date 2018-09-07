@@ -1,4 +1,7 @@
-package example;
+package example.GameComponents;
+
+import example.GameComponents.Block;
+import example.MainGame;
 
 import java.io.File;
 import java.io.FileNotFoundException;

@@ -1,5 +1,6 @@
-package example;
+package example.GameComponents;
 
+import example.MainGame;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
@@ -18,7 +19,8 @@ public class Drop {
     public enum Type {
         EXTRA_BALL,
         MOVER_SIZE_UP,
-        POWER_BOUNCHER;
+        POWER_BOUNCHER,
+        LASER;
 
         private static final List<Type> VALUES = Collections.unmodifiableList(Arrays.asList(values()));
         private static final int SIZE = VALUES.size();
@@ -42,6 +44,9 @@ public class Drop {
             case POWER_BOUNCHER:
                 image = new Image("powerbouncerpower.gif");
                 break;
+            case LASER:
+                image = new Image("laserpower.gif");
+                break;
             default:
                 image = new Image("extraballpower.gif");
 
@@ -58,7 +63,7 @@ public class Drop {
         parentContext.getRoot().getChildren().add(myImage);
     }
 
-    public void update(double elapsedTime) {
+    public boolean update(double elapsedTime) {
         myImage.setY(myImage.getY() + DROP_GRAVITY_SPEED * elapsedTime);
 
         if(isActive && parentContext.getMyMover().getBoundsInParent().intersects(myImage.getBoundsInParent())) {
@@ -66,7 +71,11 @@ public class Drop {
 
             parentContext.getRoot().getChildren().remove(myImage);
             isActive = false;
+
+            return true;
         }
+
+        return false;
 
     }
 

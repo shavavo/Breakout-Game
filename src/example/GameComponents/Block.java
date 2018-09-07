@@ -1,5 +1,6 @@
-package example;
+package example.GameComponents;
 
+import example.MainGame;
 import javafx.scene.Group;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
@@ -19,6 +20,7 @@ public class Block {
     private Boolean active;
     private StackPane stack;
 
+
     private Type blockType;
 
     private MainGame parentContext;
@@ -35,6 +37,7 @@ public class Block {
 
         this.active = true;
         this.blockType = type;
+
 
         Text text = new Text("");
 
@@ -66,54 +69,29 @@ public class Block {
         else if(myHealth==1) this.myRectangle.setFill(Color.GREEN);
     }
 
-    public void collide(double bouncerX, double bouncerY, Bouncer bouncer, Group root) {
+    public void collide(Bouncer bouncer, Group root) {
         parentContext.addToScore(50);
 
         if(bouncer.getPowerBouncer())
-            myHealth = 0;
+            myHealth -= 2;
         else
             myHealth--;
 
         // Block is broken
-        if(myHealth==0) {
-            parentContext.addToScore(100);
-
-            root.getChildren().remove(stack);
-            parentContext.getMyBlocks().remove(this);
-
-            active = false;
-
-            if (blockType == Type.RANDOM_DROP) {
-                int x = (int) (stack.getLayoutX() + stack.getWidth() / 2);
-                int y = (int) stack.getLayoutY();
-                parentContext.getMyDrops().add(new Drop(Drop.Type.randomType(), x, y, parentContext));
-            } else if (blockType == Type.BALL_SPEED_DOWN) {
-                parentContext.getMyHUD().fadeNewLabel("BALL SPEED+");
-                bouncer.changeSpeedBy(-50);
-            }
-            else if(blockType==Type.BALL_SPEED_UP) {
-                parentContext.getMyHUD().fadeNewLabel("BALL SPEED-");
-                bouncer.changeSpeedBy(50);
-            }
-
-
-
-
+        if(myHealth<=0) {
+            breakBlock(bouncer);
         } else {
             updateColor();
         }
 
-        if(!bouncer.getPowerBouncer()) {
 
+        if( !bouncer.getPowerBouncer() || (bouncer.getPowerBouncer() && myHealth>0) ) {
+            double bouncerY = bouncer.getMyImage().getBoundsInParent().getMinY() + bouncer.getMyImage().getBoundsInParent().getHeight()/2;
             //Hit was from above the brick
-            if (bouncerY <= stack.getLayoutY() - (stack.getHeight() / 2)) {
+            if ( bouncerY >= stack.getBoundsInParent().getMaxY()
+                    || bouncerY <= stack.getBoundsInParent().getMinY() ) {
                 bouncer.reverseY();
-//                System.out.println("ABOVE");
-            }
-            //Hit was from below the brick
-            else if(bouncerY >= stack.getLayoutY() + (stack.getHeight() / 2)) {
-                bouncer.reverseY();
-//                System.out.println("BELOW");
+//                System.out.println("ABOVE/BELOW");
             }
             else {
                 bouncer.reverseX();
@@ -121,6 +99,33 @@ public class Block {
             }
 
         }
+
+    }
+
+    public void breakBlock(Bouncer bouncer) {
+        parentContext.addToScore(100);
+        parentContext.getRoot().getChildren().remove(stack);
+        parentContext.getMyBlocks().remove(this);
+
+        active = false;
+
+        if (blockType == Type.RANDOM_DROP) {
+            int x = (int) (stack.getLayoutX() + stack.getWidth() / 2);
+            int y = (int) stack.getLayoutY();
+            parentContext.getMyDrops().add(new Drop(Drop.Type.randomType(), x, y, parentContext));
+        } else if(bouncer!=null) {
+            if (blockType == Type.BALL_SPEED_DOWN) {
+                parentContext.getMyHUD().fadeNewLabel("BALL SPEED-");
+                bouncer.changeSpeedBy(-25);
+            }
+            else if(blockType==Type.BALL_SPEED_UP) {
+                parentContext.getMyHUD().fadeNewLabel("BALL SPEED+");
+                bouncer.changeSpeedBy(25);
+            }
+        }
+
+
+
 
     }
 

@@ -1,4 +1,4 @@
-package example;
+package example.UI;
 
 import javafx.animation.FadeTransition;
 import javafx.scene.Group;

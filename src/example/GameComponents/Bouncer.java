@@ -1,5 +1,6 @@
-package example;
+package example.GameComponents;
 
+import example.MainGame;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -12,9 +13,9 @@ public class Bouncer {
 
 
 
-    State myState;
+    private State myState;
 
-    public int bouncer_speed;
+    private int bouncer_speed;
 
     private ImageView myImage;
 
@@ -26,8 +27,8 @@ public class Bouncer {
     private boolean recentlyHitBouncer;
 
     private boolean recentlyHitTop;
-    private boolean recentlyHitLeft;
-    private boolean recentlyHitRight;
+    private boolean free;
+
 
     private MainGame parentContext;
 
@@ -47,6 +48,7 @@ public class Bouncer {
         this.recentlyHitBouncer = false;
         this.myState = type;
 
+        this.free = true;
 
         this.myXDirection = xDir;
         this.myYDirection = yDir;
@@ -118,16 +120,24 @@ public class Bouncer {
             return true;
         }
 
+
+
         // Check for hit on block
-        for(Block block: parentContext.getMyBlocks()) {
-            if(block.isActive() &&  block.getStack().getBoundsInParent().intersects(myImage.getBoundsInParent())) {
-                block.collide(myImage.getX(), myImage.getY(), this, parentContext.getRoot());
+        for (Block block : parentContext.getMyBlocks()) {
+            if (free && block.isActive() && block.getStack().getBoundsInParent().intersects(myImage.getBoundsInParent())) {
+                block.collide(this, parentContext.getRoot());
                 recentlyHitBouncer = false;
                 recentlyHitTop = false;
+                free = false;
                 break;
             }
 
+            free = true;
         }
+
+
+
+
 
         return false;
     }
@@ -157,9 +167,11 @@ public class Bouncer {
 
     public void changeSpeedBy(int x) {
         bouncer_speed += x;
+        if(bouncer_speed <= 0)
+            bouncer_speed = 50;
     }
 
-    public double getMyBouncerSize() {
-        return myBouncerSize;
+    public State getMyState() {
+        return myState;
     }
 }
