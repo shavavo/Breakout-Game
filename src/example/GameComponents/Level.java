@@ -2,6 +2,7 @@ package example.GameComponents;
 
 import example.GameComponents.Block;
 import example.MainGame;
+import example.UI.Theme;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -15,9 +16,12 @@ public class Level {
 
     private int defaultBouncerSpeed;
 
+    private Theme theme;
+
     private MainGame parentContext;
 
-    public Level(int number, int lives, String fileName, int defaultBouncerSpeed, MainGame context) {
+    public Level(Theme theme, int number, int lives, String fileName, int defaultBouncerSpeed, MainGame context) {
+        this.theme = theme;
         this.levelNumber = number;
         this.livesStart = lives;
         this.fileName = fileName;

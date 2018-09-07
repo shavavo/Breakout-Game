@@ -6,14 +6,13 @@ import javafx.scene.image.ImageView;
 
 import java.util.*;
 
-public class Drop {
+public class Drop implements MainGame.UpdateableObject {
     public static final int DROP_GRAVITY_SPEED = 100;
 
     private ImageView myImage;
 
     private boolean isActive;
     private Type myType;
-
     private MainGame parentContext;
 
     public enum Type {
@@ -66,7 +65,7 @@ public class Drop {
     public boolean update(double elapsedTime) {
         myImage.setY(myImage.getY() + DROP_GRAVITY_SPEED * elapsedTime);
 
-        if(isActive && parentContext.getMyMover().getBoundsInParent().intersects(myImage.getBoundsInParent())) {
+        if(isActive && parentContext.getMyPaddle().getBoundsInParent().intersects(myImage.getBoundsInParent())) {
             parentContext.powerUp(myType);
 
             parentContext.getRoot().getChildren().remove(myImage);
@@ -82,9 +81,5 @@ public class Drop {
     public void remove() {
         parentContext.getRoot().getChildren().remove(myImage);
     }
-
-
-
-
 }
 

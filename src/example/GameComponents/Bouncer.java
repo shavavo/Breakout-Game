@@ -1,40 +1,35 @@
 package example.GameComponents;
 
 import example.MainGame;
+
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
-public class Bouncer {
+public class Bouncer implements MainGame.UpdateableObject {
     public enum State {
         NORMAL,
         LAUNCH;
     }
 
-
-
-    private State myState;
-
-    private int bouncer_speed;
-
     private ImageView myImage;
 
+    private State state;
+    private int bouncer_speed;
     private double myBouncerSize;
     private double myXDirection;
     private double myYDirection;
 
-    private boolean powerBouncher;
-    private boolean recentlyHitBouncer;
-
-    private boolean recentlyHitTop;
-    private boolean free;
+    private boolean powerBouncer = false;
+    private boolean recentlyHitBouncer = false;
+    private boolean recentlyHitTop = false;
+    private boolean free = true;
 
 
     private MainGame parentContext;
 
 
     public Bouncer(Image image, int x, int y, int xDir, int yDir,  double scale, State type, int speed, MainGame parentContext) {
-
         this.myImage = new ImageView(image);
         this.myImage.setX(x);
         this.myImage.setY(y);
@@ -42,14 +37,8 @@ public class Bouncer {
         this.myImage.setScaleY(scale);
 
         this.bouncer_speed = speed;
-
         this.parentContext = parentContext;
-        this.powerBouncher = false;
-        this.recentlyHitBouncer = false;
-        this.myState = type;
-
-        this.free = true;
-
+        this.state = type;
         this.myXDirection = xDir;
         this.myYDirection = yDir;
 
@@ -57,11 +46,6 @@ public class Bouncer {
 
         parentContext.getRoot().getChildren().add(myImage);
     }
-
-    public ImageView getMyImage() {
-        return myImage;
-    }
-
 
     public void reverseX() {
         myXDirection *= -1;
@@ -71,23 +55,22 @@ public class Bouncer {
         myYDirection *= -1;
     }
 
-
     public boolean update(double elapsedTime) {
-        if(myState==State.NORMAL) {
+        if(state==State.NORMAL) {
             myImage.setX(myImage.getX() + bouncer_speed * myXDirection * elapsedTime);
             myImage.setY(myImage.getY() + bouncer_speed * myYDirection * elapsedTime);
-        } else if(myState==State.LAUNCH) {
-            myImage.setX(parentContext.getMyMover().getX() + parentContext.getMyMover().getWidth()/2 - myBouncerSize/2);
-            myImage.setY(parentContext.getMyMover().getY() - parentContext.getMyMover().getHeight() );
+        }
+        // Follow paddle until launched
+        else if(state==State.LAUNCH) {
+            myImage.setX(parentContext.getMyPaddle().getX() + parentContext.getMyPaddle().getWidth()/2 - myBouncerSize/2);
+            myImage.setY(parentContext.getMyPaddle().getY() - parentContext.getMyPaddle().getHeight() );
         }
 
-
-        if(powerBouncher) {
+        if(powerBouncer) {
             ColorAdjust colorAdjust = new ColorAdjust();
             colorAdjust.setHue(-.8);
             myImage.setEffect(colorAdjust);
         }
-
 
         // Walls
         if(myImage.getX()  >= parentContext.getMyScene().getWidth() - myBouncerSize/2 ||  myImage.getX() <= 0 ) {
@@ -100,29 +83,27 @@ public class Bouncer {
             recentlyHitTop = true;
         }
         // Bouncer hits mover
-        else if(recentlyHitBouncer==false && parentContext.getMyMover().getBoundsInParent().intersects(myImage.getBoundsInParent())) {
-
+        else if(recentlyHitBouncer==false && parentContext.getMyPaddle().getBoundsInParent().intersects(myImage.getBoundsInParent())) {
             // Hit on top
-            if(parentContext.getMyMover().getY() > myImage.getY())
-                myYDirection *= -1;
+            if(parentContext.getMyPaddle().getY() > myImage.getY())
+                reverseY();
             // Hit on side
-            else if(myImage.getX() < parentContext.getMyMover().getX()  || parentContext.getMyMover().getX() + parentContext.getMyMover().getWidth() < myImage.getX())
-                myXDirection *= -1;
+            else if(myImage.getX() < parentContext.getMyPaddle().getX()  || parentContext.getMyPaddle().getX() + parentContext.getMyPaddle().getWidth() < myImage.getX())
+                reverseX();
 
-            parentContext.onBouncerHitMover(this);
+            parentContext.onBouncerHitPaddle(this);
 
             recentlyHitBouncer = true;
             recentlyHitTop = false;
-
         // bouncer goes off bottom
-        } else if(myImage.getY()>parentContext.getMyMover().getY() + parentContext.getMyMover().getHeight()) {
+        } else if(myImage.getY()>parentContext.getMyPaddle().getY() + parentContext.getMyPaddle().getHeight()) {
             remove();
             return true;
         }
 
 
-
         // Check for hit on block
+        // free variable is to avoid double hit: bouncer cannot hit another block until it is not touching anything
         for (Block block : parentContext.getMyBlocks()) {
             if (free && block.isActive() && block.getStack().getBoundsInParent().intersects(myImage.getBoundsInParent())) {
                 block.collide(this, parentContext.getRoot());
@@ -135,10 +116,6 @@ public class Bouncer {
             free = true;
         }
 
-
-
-
-
         return false;
     }
 
@@ -146,22 +123,18 @@ public class Bouncer {
         parentContext.getRoot().getChildren().remove(myImage);
     }
 
-    public void setMyState(State myState) {
-        this.myState = myState;
+    public void setMyState(State state) {
+        this.state = state;
     }
 
-    public void setPowerBouncher(boolean powerBouncher) {
-        this.powerBouncher = powerBouncher;
+    public void setPowerBouncher(boolean powerBouncer) {
+        this.powerBouncer = powerBouncer;
 
-        if(powerBouncher==false) {
+        if(powerBouncer==false) {
             ColorAdjust colorAdjust = new ColorAdjust();
             colorAdjust.setHue(0);
             myImage.setEffect(colorAdjust);
         }
-    }
-
-    public boolean getPowerBouncer() {
-        return this.powerBouncher;
     }
 
 
@@ -171,7 +144,9 @@ public class Bouncer {
             bouncer_speed = 50;
     }
 
-    public State getMyState() {
-        return myState;
-    }
+    public State getMyState() { return state; }
+
+    public boolean getPowerBouncer() { return this.powerBouncer; }
+
+    public ImageView getMyImage() { return myImage; }
 }

@@ -20,11 +20,25 @@ Hours Spent:
 
 Main class: MainGame
 
-Data files needed: 
+Data files needed: All files in resources folder
 
-Key/Mouse inputs:
+Key/Mouse inputs: 
 
-Cheat keys:
+LEFT/RIGHT ARROW KEYS - move 
+
+SPACE - launch/shoot lasers/select menu option
+
+ENTER - select menu option
+
+Cheat keys: 
+
+, for previous level
+
+. for next level
+
+\- for slow balls down
+
+\+ for speed balls up
 
 Known Bugs:
 

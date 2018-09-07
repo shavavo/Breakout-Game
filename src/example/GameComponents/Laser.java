@@ -5,7 +5,7 @@ import example.MainGame;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
-public class Laser {
+public class Laser implements MainGame.UpdateableObject {
     private static final int laserSpeed = -400;
 
     private Rectangle laser;
@@ -21,7 +21,7 @@ public class Laser {
     public boolean update(double elapsedTime) {
         laser.setY(laser.getY() + laserSpeed  * elapsedTime);
 
-        if(laser.getY() < 0)
+        if(laser.getY() + laser.getHeight() < 0)
             return true;
 
         for (Block block : parentContext.getMyBlocks()) {
@@ -29,7 +29,6 @@ public class Laser {
                 block.breakBlock(null);
                 parentContext.getRoot().getChildren().remove(laser);
                 return true;
-
             }
         }
 

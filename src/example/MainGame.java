@@ -3,6 +3,7 @@ package example;
 import example.GameComponents.*;
 import example.UI.HUD;
 import example.UI.Menu;
+import example.UI.Theme;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
@@ -13,6 +14,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -21,58 +23,22 @@ import java.util.HashMap;
 import java.util.List;
 
 
-/**
- * A basic example JavaFX program for the first lab.
- * 
- * @author Robert C. Duvall
- */
+
+
+
 public class MainGame extends Application {
+    public interface UpdateableObject {
+        boolean update(double elapsedTime);
+    }
+
     public static final String TITLE = "BREAKOUT";
     public static final int SIZE = 500;
     public static final int FRAMES_PER_SECOND = 60;
     public static final int MILLISECOND_DELAY = 1000 / FRAMES_PER_SECOND;
     public static final double SECOND_DELAY = 1.0 / FRAMES_PER_SECOND;
-    public static final Paint BACKGROUND = Color.BLACK;
-    public static final Paint HIGHLIGHT = Color.OLIVEDRAB;
     public static final String BOUNCER_IMAGE = "ball.gif";
-
-    public static final Paint MOVER_COLOR = Color.WHITESMOKE;
     public static final int MOVER_SIZE = 75;
     public static final int MOVER_SPEED = 6;
-
-
-
-    public int score;
-    public int lives;
-    public GameState gameState;
-
-
-    // some things we need to remember during our game
-    private Scene myScene;
-    private HUD myHUD;
-    private Menu myMenu;
-    private Rectangle myMover;
-    private List<Bouncer> myBouncers;
-    private List<Block> myBlocks;
-    private List<Drop> myDrops;
-    private List<Laser> myLasers;
-    private Drop.Type myActiveBouncerBuff;
-
-    private Image bouncerImage;
-
-    private int windowWidth;
-    private int windowHeight;
-
-    private HashMap<String, Boolean> currentlyActiveKeys = new HashMap<>();
-    private Group root;
-
-    private ArrayList<Level> myLevels;
-
-    public int currentLevelNumber;
-    public Level currentLevel;
-
-    private int widthBuffLength = -1;
-    private int lasersLeft = 0;
 
     public enum GameState {
         WELCOME,
@@ -82,23 +48,55 @@ public class MainGame extends Application {
         WON
     }
 
+    public int score;
+    public int lives;
+    public GameState gameState;
+
+    private Scene myScene;
+    private Group root;
+    private int windowWidth;
+    private int windowHeight;
+
+    private HUD myHUD;
+    private Menu myMenu;
+    private Rectangle myPaddle;
+    private List<Bouncer> myBouncers;
+    private List<Block> myBlocks;
+    private List<Drop> myDrops;
+    private List<Laser> myLasers;
+    private Drop.Type myActiveBouncerBuff;
+    private Theme myTheme;
+    private ArrayList<Level> myLevels;
+    public int currentLevelNumber;
+    public Level currentLevel;
+
+    private Image bouncerImage;
+
+    private HashMap<String, Boolean> currentlyActiveKeys = new HashMap<>();
+
+    private int widthBuffLength = -1;
+    private int lasersLeft = 0;
+
+
     /**
      * Initialize what will be displayed and how it will be updated.
      */
     @Override
     public void start (Stage stage) {
+        ClassLoader classLoader = getClass().getClassLoader();
+        Font.loadFont(classLoader.getResource("font.TTF").toExternalForm(), 10);
+        myTheme = Menu.themes[0];
+
         // attach scene to the stage and display it
-        myScene = setupGame( (int)(.8*SIZE) , SIZE, BACKGROUND);
+        myScene = setupGame( (int)(.8*SIZE) , SIZE, myTheme.getBgColor());
         stage.setScene(myScene);
         stage.setTitle(TITLE);
         stage.show();
 
-
-
         myLevels = new ArrayList<>();
-        myLevels.add(new Level(1, 3, "level1.txt", 200, this));
-        myLevels.add(new Level(2, 3, "level2.txt", 225, this));
-        myLevels.add(new Level(3, 3, "level3.txt", 250, this));
+        myLevels.add(new Level(myTheme, 1, 3, "level1.txt", 200, this));
+        myLevels.add(new Level(myTheme, 2, 3, "level2.txt", 225, this));
+        myLevels.add(new Level(myTheme, 3, 3, "level3.txt", 250, this));
 
         this.currentLevelNumber = 0;
         this.score = 0;
@@ -107,7 +105,6 @@ public class MainGame extends Application {
         myLasers = new ArrayList<>();
 
         gameState = GameState.WELCOME;
-//        loadLevel(currentLevelNumber);
 
         // attach "game loop" to timeline to play it
         var frame = new KeyFrame(Duration.millis(MILLISECOND_DELAY), e -> step(SECOND_DELAY));
@@ -129,16 +126,16 @@ public class MainGame extends Application {
         this.windowWidth = width;
         this.windowHeight = height;
 
-        myMenu = new Menu(width, height, this);
+        myMenu = new Menu(width, height, myTheme.getTextColor(), this);
 
         myDrops = new ArrayList<Drop>();
-        myBouncers = new ArrayList<Bouncer>();
+        myBouncers = new ArrayList<>();
 
-        myMover = new Rectangle(width/2 - MOVER_SIZE/2, .9 * height , MOVER_SIZE, MOVER_SIZE/5);
-        myMover.setFill(MOVER_COLOR);
-        root.getChildren().add(myMover);
+        myPaddle = new Rectangle(width/2 - MOVER_SIZE/2, .9 * height , MOVER_SIZE, MOVER_SIZE/5);
+        myPaddle.setFill(myTheme.getPaddleColor());
+        root.getChildren().add(myPaddle);
 
-        myHUD = new HUD(width, height, root);
+        myHUD = new HUD(width, height, myTheme.getTextColor(), root);
 
         // respond to input
         scene.setOnKeyPressed(event -> {
@@ -153,9 +150,10 @@ public class MainGame extends Application {
         return scene;
     }
 
-    private void loadLevel(int levelNumber) {
+    public void loadLevel(int levelNumber) {
         gameState = GameState.PLAYING;
 
+        // Clear previous levels elements
         for(Block block: myBlocks)
             root.getChildren().remove(block.getStack());
         myBlocks.clear();
@@ -190,92 +188,70 @@ public class MainGame extends Application {
     }
 
 
+    private void updateObjectList(List<? extends UpdateableObject> objectsToUpdate, double elapsedTime) {
+        List<UpdateableObject> toRemove = new ArrayList<>();
+        for(UpdateableObject object : objectsToUpdate) {
+            boolean shouldRemove = object.update(elapsedTime);
+            if(shouldRemove) toRemove.add(object);
+        }
+
+        objectsToUpdate.removeAll(toRemove);
+    }
+
     // Change properties of shapes to animate them
     // Note, there are more sophisticated ways to animate shapes, but these simple ways work fine to start.
     private void step (double elapsedTime) {
         if(gameState==GameState.WELCOME) {
-            if(isKeyActive(KeyCode.UP)) {
-                myMenu.up();
-                currentlyActiveKeys.remove(KeyCode.UP.toString());
-            } else if(isKeyActive(KeyCode.DOWN)) {
-                myMenu.down();
-                currentlyActiveKeys.remove(KeyCode.DOWN.toString());
-            } else if(isKeyActive(KeyCode.ENTER) || isKeyActive(KeyCode.SPACE)) {
-                switch(myMenu.getSelection()) {
-                    case 0:
-                        loadLevel(currentLevelNumber);
-                        myMenu.clear();
-                        break;
-                    case 1:
-                        if(myMenu.getIsMenuVisibile()) {
-                            myMenu.setInstructionsVisibile(true);
-                            myMenu.setMenuVisible(false);
-                        } else {
-                            myMenu.setInstructionsVisibile(false);
-                            myMenu.setMenuVisible(true);
-                        }
-                        break;
-                }
-
-                currentlyActiveKeys.remove(KeyCode.ENTER.toString());
-                currentlyActiveKeys.remove(KeyCode.SPACE.toString());
-            }
+            myMenu.handleKey();
         }
         else if(gameState==GameState.PLAYING) {
             // update attributes
-            List<Bouncer> toRemove = new ArrayList<>();
-            for(Bouncer bouncer : myBouncers) {
-                boolean shouldRemove = bouncer.update(elapsedTime);
-                if(shouldRemove) toRemove.add(bouncer);
-            }
-            myBouncers.removeAll(toRemove);
-
-            List<Drop> toRemoveDrops = new ArrayList<>();
-            for (Drop drop: myDrops) {
-                boolean shouldRemove = drop.update(elapsedTime);
-                if(shouldRemove) toRemoveDrops.add(drop);
-            }
-            myDrops.removeAll(toRemoveDrops);
-
-            List<Laser> toRemoveLasers = new ArrayList<>();
-            for (Laser laser: myLasers) {
-                boolean shouldRemove = laser.update(elapsedTime);
-                if(shouldRemove) toRemoveLasers.add(laser);
-            }
-            myLasers.removeAll(toRemoveLasers);
-
+            updateObjectList(myBouncers, elapsedTime);
+            updateObjectList(myDrops, elapsedTime);
+            updateObjectList(myLasers, elapsedTime);
 
             // Handle key presses
             if (isKeyActive(KeyCode.LEFT) && isKeyActive(KeyCode.RIGHT)) {
                 // Do nothing
-            } else if (isKeyActive(KeyCode.LEFT) && myMover.getX() > 0) {
-                myMover.setX(myMover.getX() - MOVER_SPEED);
-            } else if (isKeyActive(KeyCode.RIGHT) && myMover.getX() < myScene.getWidth() - myMover.getWidth()) {
-                myMover.setX(myMover.getX() + MOVER_SPEED);
-            } else if (isKeyActive(KeyCode.SPACE)) {
+            }
+            else if (isKeyActive(KeyCode.LEFT) && myPaddle.getX() > 0) {
+                myPaddle.setX(myPaddle.getX() - MOVER_SPEED);
+            }
+            else if (isKeyActive(KeyCode.RIGHT) && myPaddle.getX() < myScene.getWidth() - myPaddle.getWidth()) {
+                myPaddle.setX(myPaddle.getX() + MOVER_SPEED);
+            }
+            // Launch ball or shoot lasers
+            else if (isKeyActive(KeyCode.SPACE)) {
                 if(myBouncers.get(0).getMyState() == Bouncer.State.LAUNCH)
                     myBouncers.get(0).setMyState(Bouncer.State.NORMAL);
                 else if(myActiveBouncerBuff == Drop.Type.LASER) {
                     shootLaser();
                 }
                 currentlyActiveKeys.remove(KeyCode.SPACE.toString());
-            } else if (isKeyActive(KeyCode.PERIOD)) {
-
-
+            }
+            // Skip level
+            else if (isKeyActive(KeyCode.PERIOD)) {
                 for(Block block: myBlocks)
                     root.getChildren().remove(block.getStack());
                 myBlocks.clear();
 
                 currentlyActiveKeys.remove(KeyCode.PERIOD.toString());
-            } else if (isKeyActive(KeyCode.COMMA)) {
+            }
+            // Previous level
+            else if (isKeyActive(KeyCode.COMMA)) {
                 currentLevelNumber--;
                 loadLevel(currentLevelNumber);
+
                 currentlyActiveKeys.remove(KeyCode.COMMA.toString());
-            } else if (isKeyActive(KeyCode.EQUALS)) {
+            }
+            // Ball speed+
+            else if (isKeyActive(KeyCode.EQUALS)) {
                 myHUD.fadeNewLabel("BALL SPEED+");
                 for(Bouncer bouncer: myBouncers)
                     bouncer.changeSpeedBy(10);
-            } else if (isKeyActive(KeyCode.MINUS)) {
+            }
+            // Ball speed-
+            else if (isKeyActive(KeyCode.MINUS)) {
                 myHUD.fadeNewLabel("BALL SPEED-");
                 for(Bouncer bouncer: myBouncers)
                     bouncer.changeSpeedBy(-10);
@@ -306,27 +282,27 @@ public class MainGame extends Application {
                     myHUD.updatePrimaryLabel("LEVEL COMPLETED");
                     myHUD.updateSecondaryLabel("PRESS SPACE TO START NEXT LEVEL");
                 }
-
-
             }
 
         } else if(gameState==GameState.GAME_OVER) {
             if(isKeyActive(KeyCode.SPACE)) {
                 loadLevel(currentLevelNumber);
+
                 currentlyActiveKeys.remove(KeyCode.SPACE.toString());
             }
         } else if(gameState==GameState.INTERMISSION) {
             if(isKeyActive(KeyCode.SPACE)) {
                 currentLevelNumber++;
                 loadLevel(currentLevelNumber);
+
                 currentlyActiveKeys.remove(KeyCode.SPACE.toString());
             }
         } else if(gameState==GameState.WON) {
             if(isKeyActive(KeyCode.SPACE)) {
                 currentLevelNumber=0;
                 myMenu.show();
-                myHUD.updatePrimaryLabel("");
-                myHUD.updateSecondaryLabel("");
+                myHUD.clear();
+
                 gameState = GameState.WELCOME;
 
                 for(Bouncer bouncer: myBouncers)
@@ -359,7 +335,7 @@ public class MainGame extends Application {
         switch(type) {
             case MOVER_SIZE_UP:
                 myActiveBouncerBuff = type;
-                myMover.setWidth(MOVER_SIZE * 1.5);
+                myPaddle.setWidth(MOVER_SIZE * 1.5);
                 widthBuffLength = 5;
                 myHUD.fadeNewLabel("PADDLE SIZE+");
                 break;
@@ -367,40 +343,33 @@ public class MainGame extends Application {
                 var image = new Image(this.getClass().getClassLoader().getResourceAsStream("ball.gif"));
                 myHUD.fadeNewLabel("EXTRA BALL");
                 myBouncers.add(
-                        new Bouncer(
-                                image,
-                                (int)(myMover.getX() + myMover.getWidth()/2),
-                                (int)(myMover.getY() - myMover.getHeight()),
-                                1,
-                                -1,
-                                1,
-                                Bouncer.State.NORMAL,
-                                currentLevel.getDefaultBouncerSpeed(),
-                                this
+                        new Bouncer(image, (int)(myPaddle.getX() + myPaddle.getWidth()/2),
+                                (int)(myPaddle.getY() - myPaddle.getHeight()), 1, -1, 1,
+                                Bouncer.State.NORMAL, currentLevel.getDefaultBouncerSpeed(), this
                         )
                 );
                 break;
             case POWER_BOUNCHER:
                 myHUD.fadeNewLabel("POWER BALL");
                 myActiveBouncerBuff = type;
-                myMover.setWidth(MOVER_SIZE);
+                myPaddle.setWidth(MOVER_SIZE);
                 break;
             case LASER:
                 myHUD.fadeNewLabel("LASERS");
                 myActiveBouncerBuff = type;
-                myMover.setWidth(MOVER_SIZE);
+                myPaddle.setWidth(MOVER_SIZE);
                 lasersLeft = 3;
                 break;
         }
 
-        updateMoverColor();
+        updatePaddleColor();
     }
 
-    public void onBouncerHitMover(Bouncer bouncer) {
+    public void onBouncerHitPaddle(Bouncer bouncer) {
         if(myActiveBouncerBuff == Drop.Type.POWER_BOUNCHER) {
             bouncer.setPowerBouncher(true);
             myActiveBouncerBuff = null;
-            updateMoverColor();
+            updatePaddleColor();
         } else {
             bouncer.setPowerBouncher(false);
         }
@@ -409,38 +378,49 @@ public class MainGame extends Application {
             widthBuffLength--;
 
             if(widthBuffLength==0) {
-                myMover.setWidth(MOVER_SIZE);
+                myPaddle.setWidth(MOVER_SIZE);
                 myActiveBouncerBuff = null;
-                updateMoverColor();
+                updatePaddleColor();
                 widthBuffLength = -1;
             }
         }
     }
 
-    public void updateMoverColor() {
+    public void updatePaddleColor() {
         // Power bouncer takes priority
         if(myActiveBouncerBuff == Drop.Type.POWER_BOUNCHER)
-            myMover.setFill(Color.YELLOW);
+            myPaddle.setFill(Color.YELLOW);
         else if(myActiveBouncerBuff == Drop.Type.MOVER_SIZE_UP)
-            myMover.setFill(Color.RED);
+            myPaddle.setFill(Color.RED);
         else if(myActiveBouncerBuff == Drop.Type.LASER)
-            myMover.setFill(Color.DARKBLUE);
+            myPaddle.setFill(Color.DARKBLUE);
         else
-            myMover.setFill(Color.WHITESMOKE);
-
+            myPaddle.setFill(myTheme.getPaddleColor());
     }
 
     private void shootLaser() {
         myLasers.add(
-                new Laser(myMover.getX() + myMover.getWidth()/2, myMover.getY() - windowHeight*.05, windowWidth*.01, windowHeight*.05, this)
+                new Laser(myPaddle.getX() + myPaddle.getWidth()/2, myPaddle.getY() - windowHeight*.05,
+                        windowWidth*.01, windowHeight*.05, this)
         );
 
         lasersLeft--;
 
         if(lasersLeft==0) {
             myActiveBouncerBuff = null;
-            updateMoverColor();
+            updatePaddleColor();
         }
+
+    }
+
+    public void loadTheme(Theme theme) {
+        myTheme = theme;
+        
+        myPaddle.setFill(theme.getPaddleColor());
+        myHUD.updateColor(theme.getTextColor());
+        myMenu.updateColor(theme.getTextColor());
+
+        myScene.setFill(theme.getBgColor());
 
     }
 
@@ -455,13 +435,30 @@ public class MainGame extends Application {
 
     public List<Block> getMyBlocks() { return myBlocks; }
 
-    public Rectangle getMyMover() { return myMover; }
+    public Rectangle getMyPaddle() { return myPaddle; }
 
     public List<Drop> getMyDrops() { return myDrops; }
 
     public Group getRoot() { return root; }
 
     public HUD getMyHUD() { return myHUD; }
+
+    public HashMap<String, Boolean> getCurrentlyActiveKeys() {
+        return currentlyActiveKeys;
+    }
+
+    public Theme getMyTheme() {
+        return myTheme;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+        myHUD.updateScore(score);
+    }
 
     // END GETTERS
 

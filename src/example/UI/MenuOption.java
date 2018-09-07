@@ -10,12 +10,12 @@ public class MenuOption {
     private String text;
     private boolean selected = false;
 
-    public MenuOption(String text, boolean selected, double x, double y, double w) {
+    public MenuOption(String text, boolean selected, double x, double y, double w, Color textColor) {
         this.selected = selected;
         this.text = text;
 
         title = new Text();
-        title.setFill(Color.WHITE);
+        title.setFill(textColor);
         title.setY(y);
         title.setX(x);
         title.setWrappingWidth(w);
@@ -44,4 +44,18 @@ public class MenuOption {
     public Text getTitle() {
         return title;
     }
+
+    public void updateColor(Color textColor) {
+        title.setFill(textColor);
+    }
+
+    public String getText() {
+        return title.getText();
+    }
+
+    public void setText(String text) {
+        title.setText(text);
+        this.text = text;
+    }
+
 }
