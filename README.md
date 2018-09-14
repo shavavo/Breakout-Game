@@ -9,12 +9,14 @@ Name: David Cheng
 
 Start Date: 8/30/18
 
-Finish Date: 
+Finish Date: 9/7/18
 
-Hours Spent:
+Hours Spent: 10 hours
 
 ### Resources Used
 
+Stack Overflow: various threads about Java syntax and structures
+JavaFX documentation
 
 ### Running the Program
 
@@ -24,29 +26,36 @@ Data files needed: All files in resources folder
 
 Key/Mouse inputs: 
 
-LEFT/RIGHT ARROW KEYS - move 
+* LEFT/RIGHT ARROW KEYS - move 
 
-SPACE - launch/shoot lasers/select menu option
+* SPACE - launch/shoot lasers/select menu option
 
-ENTER - select menu option
+* ENTER - select menu option
 
 Cheat keys: 
 
-, for previous level
+* , for previous level
 
-. for next level
+* . for next level
 
-\- for slow balls down
+* \- for slow balls down
 
-\+ for speed balls up
+* \+ for speed balls up
+
+* ~ for extra life
 
 Known Bugs:
 
-Extra credit:
+* On rare occasions where the ball bounces between two blocks it will not travel the correct direction.
+* Resizing the window will not resize the game
+* On rare occasions the ball will get stuck inside a wall
+* Using the cheat key for previous level on level 1 will crash the game
 
-
-### Notes
+Extra feature:
+* Added skins/themes that can be bought for points. Each skin is 5000 points and contains different color schemes.
 
 
 ### Impressions
+
+Was a fun first assignment. I liked the flexibility.
 

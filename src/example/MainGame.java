@@ -22,9 +22,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-
-
-
+/**
+ * Worked on by: David Cheng
+ *
+ * MainGame controls the game, stores any game state variables, updates components, etc.
+ */
 
 public class MainGame extends Application {
     public interface UpdateableObject {
@@ -114,7 +116,14 @@ public class MainGame extends Application {
         animation.play();
     }
 
-    // Create the game's "scene": what shapes will be in the game and their starting properties
+    /**
+     * Create the game's "scene": what shapes will be in the game and their starting properties
+     *
+     * @param width
+     * @param height
+     * @param background
+     * @return Scene
+     */
     private Scene setupGame (int width, int height, Paint background) {
         // create one top level collection to organize the things in the scene
         root = new Group();
@@ -150,6 +159,11 @@ public class MainGame extends Application {
         return scene;
     }
 
+    /**
+     * Clears components from previous level and loads blocks for levelNumber
+     *
+     * @param levelNumber
+     */
     public void loadLevel(int levelNumber) {
         gameState = GameState.PLAYING;
 
@@ -187,7 +201,13 @@ public class MainGame extends Application {
         myHUD.updateSecondaryLabel("");
     }
 
-
+    /**
+     * Generalized function to call .update(elapsedTime) in a list of UpdateableObjects
+     * Removes these objects if needed (if update() returns True)
+     *
+     * @param objectsToUpdate
+     * @param elapsedTime
+     */
     private void updateObjectList(List<? extends UpdateableObject> objectsToUpdate, double elapsedTime) {
         List<UpdateableObject> toRemove = new ArrayList<>();
         for(UpdateableObject object : objectsToUpdate) {
@@ -198,8 +218,12 @@ public class MainGame extends Application {
         objectsToUpdate.removeAll(toRemove);
     }
 
-    // Change properties of shapes to animate them
-    // Note, there are more sophisticated ways to animate shapes, but these simple ways work fine to start.
+    /**
+     * Change properties of shapes to animate them
+     * Reads game state and reacts accordingly
+     *
+     * @param elapsedTime
+     */
     private void step (double elapsedTime) {
         if(gameState==GameState.WELCOME) {
             myMenu.handleKey();
@@ -210,52 +234,7 @@ public class MainGame extends Application {
             updateObjectList(myDrops, elapsedTime);
             updateObjectList(myLasers, elapsedTime);
 
-            // Handle key presses
-            if (isKeyActive(KeyCode.LEFT) && isKeyActive(KeyCode.RIGHT)) {
-                // Do nothing
-            }
-            else if (isKeyActive(KeyCode.LEFT) && myPaddle.getX() > 0) {
-                myPaddle.setX(myPaddle.getX() - MOVER_SPEED);
-            }
-            else if (isKeyActive(KeyCode.RIGHT) && myPaddle.getX() < myScene.getWidth() - myPaddle.getWidth()) {
-                myPaddle.setX(myPaddle.getX() + MOVER_SPEED);
-            }
-            // Launch ball or shoot lasers
-            else if (isKeyActive(KeyCode.SPACE)) {
-                if(myBouncers.get(0).getMyState() == Bouncer.State.LAUNCH)
-                    myBouncers.get(0).setMyState(Bouncer.State.NORMAL);
-                else if(myActiveBouncerBuff == Drop.Type.LASER) {
-                    shootLaser();
-                }
-                currentlyActiveKeys.remove(KeyCode.SPACE.toString());
-            }
-            // Skip level
-            else if (isKeyActive(KeyCode.PERIOD)) {
-                for(Block block: myBlocks)
-                    root.getChildren().remove(block.getStack());
-                myBlocks.clear();
-
-                currentlyActiveKeys.remove(KeyCode.PERIOD.toString());
-            }
-            // Previous level
-            else if (isKeyActive(KeyCode.COMMA)) {
-                currentLevelNumber--;
-                loadLevel(currentLevelNumber);
-
-                currentlyActiveKeys.remove(KeyCode.COMMA.toString());
-            }
-            // Ball speed+
-            else if (isKeyActive(KeyCode.EQUALS)) {
-                myHUD.fadeNewLabel("BALL SPEED+");
-                for(Bouncer bouncer: myBouncers)
-                    bouncer.changeSpeedBy(10);
-            }
-            // Ball speed-
-            else if (isKeyActive(KeyCode.MINUS)) {
-                myHUD.fadeNewLabel("BALL SPEED-");
-                for(Bouncer bouncer: myBouncers)
-                    bouncer.changeSpeedBy(-10);
-            }
+            handleKeys();
 
             // No bouncers left, lives - 1
             if(myBouncers.size()==0) {
@@ -320,7 +299,70 @@ public class MainGame extends Application {
         }
     }
 
+    /**
+     * Handles any key presses like cheat keys or movement
+     */
+    public void handleKeys() {
+        // Handle key presses
+        if (isKeyActive(KeyCode.LEFT) && isKeyActive(KeyCode.RIGHT)) {
+            // Do nothing
+        }
+        else if (isKeyActive(KeyCode.LEFT) && myPaddle.getX() > 0) {
+            myPaddle.setX(myPaddle.getX() - MOVER_SPEED);
+        }
+        else if (isKeyActive(KeyCode.RIGHT) && myPaddle.getX() < myScene.getWidth() - myPaddle.getWidth()) {
+            myPaddle.setX(myPaddle.getX() + MOVER_SPEED);
+        }
+        // Launch ball or shoot laser
+        else if (isKeyActive(KeyCode.SPACE)) {
+            if(myBouncers.get(0).getMyState() == Bouncer.State.LAUNCH)
+                myBouncers.get(0).setMyState(Bouncer.State.NORMAL);
+            else if(myActiveBouncerBuff == Drop.Type.LASER) {
+                shootLaser();
+            }
+            currentlyActiveKeys.remove(KeyCode.SPACE.toString());
+        }
+        // Skip level
+        else if (isKeyActive(KeyCode.PERIOD)) {
+            for(Block block: myBlocks)
+                root.getChildren().remove(block.getStack());
+            myBlocks.clear();
 
+            currentlyActiveKeys.remove(KeyCode.PERIOD.toString());
+        }
+        // Previous level
+        else if (isKeyActive(KeyCode.COMMA)) {
+            currentLevelNumber--;
+            loadLevel(currentLevelNumber);
+
+            currentlyActiveKeys.remove(KeyCode.COMMA.toString());
+        }
+        // Ball speed+
+        else if (isKeyActive(KeyCode.EQUALS)) {
+            myHUD.fadeNewLabel("BALL SPEED+");
+            for(Bouncer bouncer: myBouncers)
+                bouncer.changeSpeedBy(10);
+        }
+        // Ball speed-
+        else if (isKeyActive(KeyCode.MINUS)) {
+            myHUD.fadeNewLabel("BALL SPEED-");
+            for(Bouncer bouncer: myBouncers)
+                bouncer.changeSpeedBy(-10);
+        } else if(isKeyActive(KeyCode.BACK_QUOTE)) {
+            myHUD.fadeNewLabel("LIVES +1");
+            lives += 1;
+            myHUD.updateLives(lives);
+
+            currentlyActiveKeys.remove(KeyCode.BACK_QUOTE.toString());
+        }
+    }
+
+    /**
+     * Checks to see if key is in HashMap and set to True
+     *
+     * @param code
+     * @return True/False if key is active
+     */
     private boolean isKeyActive(KeyCode code) {
         String codeString = code.toString();
         if(currentlyActiveKeys.containsKey(codeString) && currentlyActiveKeys.get(codeString))
@@ -329,6 +371,11 @@ public class MainGame extends Application {
     }
 
 
+    /**
+     * Creates power-up effects
+     *
+     * @param type
+     */
     public void powerUp(Drop.Type type) {
         addToScore(500);
 
@@ -360,11 +407,22 @@ public class MainGame extends Application {
                 myPaddle.setWidth(MOVER_SIZE);
                 lasersLeft = 3;
                 break;
+            case EXTRA_LIFE:
+                myHUD.fadeNewLabel("LIVES +1");
+                lives += 1;
+                myHUD.updateLives(lives);
+                break;
         }
 
         updatePaddleColor();
     }
 
+    /**
+     * Listener for when bouncer hits paddle
+     * Required for paddle buff because it lasts 5 hits
+     *
+     * @param bouncer
+     */
     public void onBouncerHitPaddle(Bouncer bouncer) {
         if(myActiveBouncerBuff == Drop.Type.POWER_BOUNCHER) {
             bouncer.setPowerBouncher(true);
@@ -386,6 +444,9 @@ public class MainGame extends Application {
         }
     }
 
+    /**
+     * Changes paddle color depending on active buff
+     */
     public void updatePaddleColor() {
         // Power bouncer takes priority
         if(myActiveBouncerBuff == Drop.Type.POWER_BOUNCHER)
@@ -398,6 +459,9 @@ public class MainGame extends Application {
             myPaddle.setFill(myTheme.getPaddleColor());
     }
 
+    /**
+     *  Creates new instance of laser
+     */
     private void shootLaser() {
         myLasers.add(
                 new Laser(myPaddle.getX() + myPaddle.getWidth()/2, myPaddle.getY() - windowHeight*.05,
@@ -413,6 +477,11 @@ public class MainGame extends Application {
 
     }
 
+    /**
+     * Loads theme by changing colors
+     *
+     * @param theme
+     */
     public void loadTheme(Theme theme) {
         myTheme = theme;
         

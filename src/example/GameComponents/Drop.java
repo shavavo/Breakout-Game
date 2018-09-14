@@ -19,7 +19,8 @@ public class Drop implements MainGame.UpdateableObject {
         EXTRA_BALL,
         MOVER_SIZE_UP,
         POWER_BOUNCHER,
-        LASER;
+        LASER,
+        EXTRA_LIFE;
 
         private static final List<Type> VALUES = Collections.unmodifiableList(Arrays.asList(values()));
         private static final int SIZE = VALUES.size();
@@ -46,12 +47,22 @@ public class Drop implements MainGame.UpdateableObject {
             case LASER:
                 image = new Image("laserpower.gif");
                 break;
+            case EXTRA_LIFE:
+                image = new Image("heart.png");
+                break;
             default:
                 image = new Image("extraballpower.gif");
 
         }
 
         this.myImage = new ImageView(image);
+
+        if(type==type.EXTRA_LIFE) {
+            myImage.setFitWidth(20);
+            myImage.setFitHeight(20);
+        }
+
+
         myImage.setX(x);
         myImage.setY(y);
 

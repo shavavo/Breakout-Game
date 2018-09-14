@@ -238,7 +238,7 @@ public class Menu {
 
                     if(!purchasedSkinsIndex.contains(skinsSelection)) {
                         String text = skinsMenu.get(skinsSelection).getText();
-                        skinsMenu.get(skinsSelection).setText(text.substring(0, text.length()-7));
+                        skinsMenu.get(skinsSelection).setText(text.substring(2, text.length()-7));
 
                         parentContext.setScore(parentContext.getScore() - 5000);
                         purchasedSkinsIndex.add(skinsSelection);
