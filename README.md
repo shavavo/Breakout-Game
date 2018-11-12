@@ -1,7 +1,7 @@
-game
+Breakout Game
 ====
 
-This project implements the game of Breakout.
+First assignment for CS308.
 
 Name: David Cheng
 
@@ -54,8 +54,4 @@ Known Bugs:
 Extra feature:
 * Added skins/themes that can be bought for points. Each skin is 5000 points and contains different color schemes.
 
-
-### Impressions
-
-Was a fun first assignment. I liked the flexibility.
 
