@@ -3,6 +3,8 @@ Breakout Game
 
 First assignment for CS308.
 
+Demo: https://www.youtube.com/watch?v=tEfp4Y5S9rc
+
 Name: David Cheng
 
 ### Timeline
